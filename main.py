@@ -25,7 +25,7 @@ class Level:
     view: int = 0
 
     @classmethod
-    def from_json(cls, code: str, json_data: dict) -> 'Level':
+    def from_json(cls, json_data: dict) -> 'Level':
         raw_tiles = json_data['tiles']
         tiles = []
         for row in raw_tiles:
@@ -36,7 +36,7 @@ class Level:
 
         return cls(
             stageId=json_data['stageId'],
-            code=code,
+            code=json_data['code'],
             levelId=json_data['levelId'],
             name=json_data['name'],
             height=json_data['height'],
@@ -52,7 +52,6 @@ class Level:
         return self.height
 
     def get_tile(self, row: int, col: int) -> Optional[Tile]:
-        print(row, col)
         if 0 <= row <= self.height and 0 <= col <= self.width:
             return self.tiles[row][col]
         return None
@@ -177,8 +176,8 @@ levels_path = pathlib.Path(__file__).parent / "levels.json"
 levels: List[Level] = []
 with open(levels_path, encoding="UTF-8") as fp:
     level_table = json.loads(fp.read())
-    for code, data in level_table.items():
-        levels.append(Level.from_json(code, data))
+    for data in level_table:
+        levels.append(Level.from_json(data))
 
 if __name__ == "__main__":
     calc = Calc(1660, 1080)
