@@ -62,7 +62,11 @@ class Calc:
     ratio: float
     matrix_p: np.array = None
 
-    def __init__(self, width: int, height: int):
+    def __init__(self, width: Optional[int], height: Optional[int]):
+        if width is not None and height is not None:
+            self.init(width, height)
+
+    def init(self, width: int, height: int):
         self.width = width
         self.height = height
         self.ratio = height / width
@@ -171,7 +175,7 @@ with open(data_path, encoding="UTF-8") as fp:
     view_table = json.loads(fp.read())
 
 if __name__ == "__main__":
-    calc = Calc(1660, 1080)
+    calc = Calc(1920, 1080)
     level = "2-10"
     img = cv2.imread(f"main/{level}.png")
     for i in calc.run(level, True):
