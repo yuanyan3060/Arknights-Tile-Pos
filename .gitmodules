@@ -1,0 +1,3 @@
+[submodule "cpp/3rdparty/include/meojson"]
+	path = cpp/3rdparty/include/meojson
+	url = https://github.com/MistEO/meojson
