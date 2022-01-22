@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import json
 import pathlib
 import math
-
+import time
 
 @dataclass
 class Tile:
@@ -77,7 +77,6 @@ class Calc:
             [0, 0, -(1000 + 0.3) / (1000 - 0.3), -(1000 * 0.3 * 2) / (1000 - 0.3)],
             [0, 0, -1, 0],
         ])
-
     def adapter(self) -> Tuple[float, float]:
         fromRatio = 9 / 16
         toRatio = 3 / 4
@@ -153,6 +152,7 @@ class Calc:
             matrix = np.dot(matrix, raw)
         else:
             matrix = np.dot(matrix_x, raw)
+        print(matrix)
         matrix = np.dot(self.matrix_p, matrix)
         h = level.get_height()
         w = level.get_width()
@@ -175,12 +175,14 @@ gamedata_path = pathlib.Path(__file__).parent / "gamedata"
 levels_path = pathlib.Path(__file__).parent / "levels.json"
 levels: List[Level] = []
 with open(levels_path, encoding="UTF-8") as fp:
+    start = time.time()
     level_table = json.loads(fp.read())
     for data in level_table:
         levels.append(Level.from_json(data))
+    print(time.time()-start)
 
 if __name__ == "__main__":
-    calc = Calc(1660, 1080)
+    calc = Calc(1680, 1080)
     code = "2-10"
     img = cv2.imread(f"main/{code}.png")
     for i in calc.run(code, side=True):
