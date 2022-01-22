@@ -69,13 +69,14 @@ Map::TileCalc::TileCalc(int width, int height, const std::string& dir) {
     InitMat4x4(TileCalc::MatrixY, matrixY);
     std::ifstream ifs(dir, std::ios::in);
     if (!ifs.is_open()) {
+        std::cerr << "Read resource failed" << std::endl;
         return;
     }
     std::stringstream iss;
     iss << ifs.rdbuf();
     ifs.close();
     std::string content = iss.str();
-    auto ret = json::parser::parse(content);
+    auto ret = json::parse(content);
     if (!ret) {
         std::cerr << "Parsing failed" << std::endl;
         return;
@@ -100,7 +101,7 @@ bool Map::TileCalc::adapter(double& x, double& y) const {
     return true;
 }
 
-void Map::TileCalc::run(const std::string& code, const std::string& name, bool side, std::vector<std::vector<cv::Point2d>>& out_pos, std::vector<std::vector<Tile>>& out_tiles) const {
+bool Map::TileCalc::run(const std::string& code, const std::string& name, bool side, std::vector<std::vector<cv::Point2d>>& out_pos, std::vector<std::vector<Tile>>& out_tiles) const {
     double x = 0, y = 0, z = 0;
     for (const Map::Level& level : TileCalc::levels) {
         if (level.code == code || level.name == name) {
@@ -147,7 +148,7 @@ void Map::TileCalc::run(const std::string& code, const std::string& name, bool s
                 }
                 break;
             }
-            double adapter_y, adapter_z;
+            double adapter_y = 0, adapter_z = 0;
             TileCalc::adapter(adapter_y, adapter_z);
             double matrix[4][4]{
                 { 1, 0, 0, -x},
@@ -187,4 +188,5 @@ void Map::TileCalc::run(const std::string& code, const std::string& name, bool s
             break;
         }
     }
+    return true;
 }
