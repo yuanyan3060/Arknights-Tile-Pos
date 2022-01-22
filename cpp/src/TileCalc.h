@@ -16,9 +16,9 @@ namespace Map {
     class Level {
     public:
         Level(const json::value& data);
-        int get_width();
-        int get_height();
-        Tile get_item(int y, int x);
+        int get_width() const;
+        int get_height() const;
+        Tile get_item(int y, int x) const;
         int view;
         std::string stageId;
         std::string	code;
@@ -33,15 +33,15 @@ namespace Map {
     {
     public:
         TileCalc(int width, int height, const std::string& dir);
-        void run(const std::string& code, const std::string& name, bool side, std::vector<std::vector<cv::Point2d>>& out_pos, std::vector<std::vector<Tile>>& out_tiles);
+        void run(const std::string& code, const std::string& name, bool side, std::vector<std::vector<cv::Point2d>>& out_pos, std::vector<std::vector<Tile>>& out_tiles) const;
     private:
         int width;
         int height;
-        double degree = atan(1.0) * 4 / 180;
+        const double degree = atan(1.0) * 4 / 180;
         std::vector<Level> levels;
         cv::Mat MatrixP = cv::Mat(4, 4, CV_64F);
         cv::Mat MatrixX = cv::Mat(4, 4, CV_64F);
         cv::Mat MatrixY = cv::Mat(4, 4, CV_64F);
-        bool adapter(double& x, double& y);
+        bool adapter(double& x, double& y) const;
     };
 }

@@ -17,18 +17,12 @@ Map::Level::Level(const json::value& data) {
     Level::stageId = data.at("stageId").as_string();
     Level::code = data.at("code").as_string();
     Level::levelId = data.at("levelId").as_string();
-    if (data.at("name").is_null()) {
-        Level::name = std::string("null");
-    }
-    else {
-        Level::name = data.at("name").as_string();
-    }
+    Level::name = data.get("name", "null");
     Level::height = data.at("height").as_integer();
     Level::width = data.at("width").as_integer();
     Level::view = data.at("view").as_integer();
-    std::vector<Tile> tmp = std::vector<Tile>(Level::width);
     for (const json::value& row : data.at("tiles").as_array()) {
-        tmp.clear();
+        std::vector<Tile> tmp(Level::width);
         for (const json::value& tile : row.as_array()) {
             tmp.emplace_back(Tile{ tile.at("heightType").as_integer(), tile.at("buildableType").as_integer() });
         }
@@ -36,15 +30,15 @@ Map::Level::Level(const json::value& data) {
     }
 }
 
-int Map::Level::get_width() {
+int Map::Level::get_width() const {
     return Level::width;
 }
 
-int Map::Level::get_height() {
+int Map::Level::get_height() const {
     return Level::height;
 }
 
-Map::Tile Map::Level::get_item(int y, int x) {
+Map::Tile Map::Level::get_item(int y, int x) const {
     return Level::tiles[y][x];
 }
 
@@ -86,12 +80,12 @@ Map::TileCalc::TileCalc(int width, int height, const std::string& dir) {
         std::cerr << "Parsing failed" << std::endl;
         return;
     }
-    for (json::value item : ret.value().as_array()) {
-        TileCalc::levels.push_back(Map::Level(item));
+    for (const json::value& item : ret.value().as_array()) {
+        TileCalc::levels.emplace_back(item);
     }
 }
 
-bool Map::TileCalc::adapter(double& x, double& y) {
+bool Map::TileCalc::adapter(double& x, double& y) const {
     const double fromRatio = 9.0 / 16;
     const double toRatio = 3.0 / 4;
     double ratio = static_cast<double>(height) / width;
@@ -106,9 +100,9 @@ bool Map::TileCalc::adapter(double& x, double& y) {
     return true;
 }
 
-void Map::TileCalc::run(const std::string& code, const std::string& name, bool side, std::vector<std::vector<cv::Point2d>>& out_pos, std::vector<std::vector<Tile>>& out_tiles) {
-    double x, y, z;
-    for (Map::Level level : TileCalc::levels) {
+void Map::TileCalc::run(const std::string& code, const std::string& name, bool side, std::vector<std::vector<cv::Point2d>>& out_pos, std::vector<std::vector<Tile>>& out_tiles) const {
+    double x = 0, y = 0, z = 0;
+    for (const Map::Level& level : TileCalc::levels) {
         if (level.code == code || level.name == name) {
             switch (level.view)
             {
@@ -176,16 +170,16 @@ void Map::TileCalc::run(const std::string& code, const std::string& name, bool s
             map_point.at<double>(3, 0) = 1;
             auto tmp_pos = std::vector<cv::Point2d>(w);
             auto tmp_tiles = std::vector<Tile>(w);
-            for (int y = 0; y < h; y++) {
-                for (int x = 0; x < w; x++) {
-                    tmp_tiles[x] = level.get_item(y, x);
-                    map_point.at<double>(0, 0) = x - (w - 1) / 2.0;
-                    map_point.at<double>(1, 0) = (h - 1) / 2.0 - y;
-                    map_point.at<double>(2, 0) = tmp_tiles[x].heightType * -0.4;
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    tmp_tiles[j] = level.get_item(i, j);
+                    map_point.at<double>(0, 0) = j - (w - 1) / 2.0;
+                    map_point.at<double>(1, 0) = (h - 1) / 2.0 - i;
+                    map_point.at<double>(2, 0) = tmp_tiles[j].heightType * -0.4;
                     cv::Mat view_point = Finall_Matrix * map_point;
                     view_point = view_point / view_point.at<double>(3, 0);
                     view_point = (view_point + 1) / 2;
-                    tmp_pos[x] = cv::Point2d(view_point.at<double>(0, 0) * TileCalc::width, (1 - view_point.at<double>(1, 0)) * TileCalc::height);
+                    tmp_pos[j] = cv::Point2d(view_point.at<double>(0, 0) * TileCalc::width, (1 - view_point.at<double>(1, 0)) * TileCalc::height);
                 }
                 out_pos.emplace_back(tmp_pos);
                 out_tiles.emplace_back(tmp_tiles);
