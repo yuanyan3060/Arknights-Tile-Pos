@@ -9,14 +9,17 @@
 #include <opencv2/core.hpp>
 #include <meojson/include/json.hpp>
 
-namespace Map {
+namespace Map
+{
     struct Tile
     {
         int heightType = 0;
         int buildableType = 0;
+        std::string tileKey;
     };
 
-    class Level {
+    class Level
+    {
     public:
         Level(const json::value& data);
         int get_width() const { return width; }
@@ -36,7 +39,7 @@ namespace Map {
     {
     public:
         TileCalc(int width, int height, const std::string& dir);
-        bool run(const std::string& code, const std::string& name, bool side, std::vector<std::vector<cv::Point2d>>& out_pos, std::vector<std::vector<Tile>>& out_tiles) const;
+        bool run(const std::string& code_or_name, bool side, std::vector<std::vector<cv::Point2d>>& out_pos, std::vector<std::vector<Tile>>& out_tiles) const;
     private:
         int width = 0;
         int height = 0;
@@ -55,7 +58,7 @@ namespace Map {
                 m.at<double>(i, j) = num[i][j];
     }
 
-    Level::Level(const json::value& data)
+    inline Level::Level(const json::value& data)
     {
         Level::stageId = data.at("stageId").as_string();
         Level::code = data.at("code").as_string();
@@ -66,14 +69,26 @@ namespace Map {
         Level::view = data.at("view").as_integer();
         for (const json::value& row : data.at("tiles").as_array()) {
             std::vector<Tile> tmp(Level::width);
+            auto iter = tmp.begin();
             for (const json::value& tile : row.as_array()) {
-                tmp.emplace_back(Tile{ tile.at("heightType").as_integer(), tile.at("buildableType").as_integer() });
+                if (iter != tmp.end())
+                {
+                    *iter = Tile{
+                        tile.at("heightType").as_integer(),
+                        tile.at("buildableType").as_integer(),
+                        tile.get("tileKey", std::string()) };
+                    ++iter;
+                }
+                else {
+                    std::cerr << "Tiles json error" << std::endl;
+                }
             }
             tiles.emplace_back(std::move(tmp));
         }
     }
 
-    TileCalc::TileCalc(int width, int height, const std::string& dir) {
+    inline TileCalc::TileCalc(int width, int height, const std::string& dir)
+    {
         TileCalc::width = width;
         TileCalc::height = height;
         double ratio = static_cast<double>(height) / width;
@@ -101,7 +116,7 @@ namespace Map {
         std::ifstream ifs(dir, std::ios::in);
         if (!ifs.is_open()) {
             std::cerr << "Read resource failed" << std::endl;
-            return;
+            throw "Read resource failed";
         }
         std::stringstream iss;
         iss << ifs.rdbuf();
@@ -110,14 +125,14 @@ namespace Map {
         auto ret = json::parse(content);
         if (!ret) {
             std::cerr << "Parsing failed" << std::endl;
-            return;
+            throw "Parsing failed";
         }
         for (const json::value& item : ret.value().as_array()) {
             TileCalc::levels.emplace_back(item);
         }
     }
 
-    bool TileCalc::adapter(double& x, double& y) const
+    inline bool TileCalc::adapter(double& x, double& y) const
     {
         const double fromRatio = 9.0 / 16;
         const double toRatio = 3.0 / 4;
@@ -133,12 +148,13 @@ namespace Map {
         return true;
     }
 
-    bool TileCalc::run(const std::string& code, const std::string& name, bool side, std::vector<std::vector<cv::Point2d>>& out_pos, std::vector<std::vector<Tile>>& out_tiles) const {
+    inline bool TileCalc::run(const std::string& code_or_name, bool side, std::vector<std::vector<cv::Point2d>>& out_pos, std::vector<std::vector<Tile>>& out_tiles) const
+    {
+        bool runned = false;
         double x = 0, y = 0, z = 0;
         for (const Map::Level& level : TileCalc::levels) {
-            if (level.code == code || level.name == name) {
-                switch (level.view)
-                {
+            if (level.code == code_or_name || level.name == code_or_name) {
+                switch (level.view) {
                 case 0:
                     x = 0;
                     y = -4.81;
@@ -217,9 +233,10 @@ namespace Map {
                     out_pos.emplace_back(tmp_pos);
                     out_tiles.emplace_back(tmp_tiles);
                 }
+                runned = true;
                 break;
             }
         }
-        return true;
+        return runned;
     }
 }
