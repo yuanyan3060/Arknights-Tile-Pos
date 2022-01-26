@@ -5,7 +5,7 @@ cmake_minimum_required (VERSION 3.8)
 
 set(CMAKE_CXX_STANDARD 17)
 project ("Arknights-Tile-Pos-Cpp")
-include_directories(src 3rdparty/include)
+include_directories(include 3rdparty/include)
 
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/W4;/WX>")
@@ -17,5 +17,5 @@ else ()
     find_package(OpenCV REQUIRED)
 endif ()
 
-add_executable(Arknights-Tile-Pos-Cpp main.cpp "src/TileCalc.cpp")
+add_executable(Arknights-Tile-Pos-Cpp sample.cpp)
 target_link_libraries(Arknights-Tile-Pos-Cpp ${OpenCV})
