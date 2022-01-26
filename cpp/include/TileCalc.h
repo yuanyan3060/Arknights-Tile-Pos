@@ -68,20 +68,13 @@ namespace Map
         Level::width = data.at("width").as_integer();
         Level::view = data.at("view").as_integer();
         for (const json::value& row : data.at("tiles").as_array()) {
-            std::vector<Tile> tmp(Level::width);
-            auto iter = tmp.begin();
+            std::vector<Tile> tmp;
+            tmp.reserve(Level::width);
             for (const json::value& tile : row.as_array()) {
-                if (iter != tmp.end())
-                {
-                    *iter = Tile{
-                        tile.at("heightType").as_integer(),
-                        tile.at("buildableType").as_integer(),
-                        tile.get("tileKey", std::string()) };
-                    ++iter;
-                }
-                else {
-                    std::cerr << "Tiles json error" << std::endl;
-                }
+                tmp.emplace_back(Tile{
+                    tile.at("heightType").as_integer(),
+                    tile.at("buildableType").as_integer(),
+                    tile.get("tileKey", std::string()) });
             }
             tiles.emplace_back(std::move(tmp));
         }
