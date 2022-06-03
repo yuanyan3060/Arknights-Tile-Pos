@@ -5,7 +5,6 @@ from dataclasses import dataclass
 import json
 import pathlib
 import math
-import time
 
 @dataclass
 class Tile:
@@ -22,7 +21,7 @@ class Level:
     height: int = 0
     width: int = 0
     tiles: List[List[Tile]] = None
-    view: int = 0
+    view: List[List[int]] = None
 
     @classmethod
     def from_json(cls, json_data: dict) -> 'Level':
@@ -101,30 +100,10 @@ class Calc:
                 level = item
         if level is None:
             return []
-        if level.view == 0:
-            x, y, z = 0.0, -4.81, - 7.76
-            if side:
-                x += 0.5975104570388794
-                y -= 0.5
-                z -= 0.882108688354492
-        elif level.view == 1:
-            x, y, z = 0.0, -5.60, -8.92
-            if side:
-                x += 0.7989424467086792
-                y -= 0.5
-                z -= 0.86448486328125
-        elif level.view == 2:
-            x, y, z = 0.0, -5.08, -8.04
-            if side:
-                x += 0.6461319923400879
-                y -= 0.5
-                z -= 0.877854309082031
+        if side:
+            x, y, z = level.view[1]
         else:
-            x, y, z = 0.0, -6.1, -9.78
-            if side:
-                x += 0.948279857635498
-                y -= 0.5
-                z -= 0.85141918182373
+            x, y, z = level.view[0]
         adapter_y, adapter_z = self.adapter()
         y += adapter_y
         z += adapter_z
@@ -152,7 +131,6 @@ class Calc:
             matrix = np.dot(matrix, raw)
         else:
             matrix = np.dot(matrix_x, raw)
-        print(matrix)
         matrix = np.dot(self.matrix_p, matrix)
         h = level.get_height()
         w = level.get_width()
@@ -173,11 +151,9 @@ class Calc:
 levels_path = pathlib.Path(__file__).parent / "levels.json"
 levels: List[Level] = []
 with open(levels_path, encoding="UTF-8") as fp:
-    start = time.time()
     level_table = json.loads(fp.read())
     for data in level_table:
         levels.append(Level.from_json(data))
-    print(time.time()-start)
 
 if __name__ == "__main__":
     calc = Calc(1680, 1080)

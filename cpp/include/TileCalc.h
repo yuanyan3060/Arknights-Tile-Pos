@@ -25,7 +25,7 @@ namespace Map
         int get_width() const { return width; }
         int get_height() const { return height; }
         Tile get_item(int y, int x) const { return tiles[y][x]; }
-        int view = 0;
+        std::vector<cv::Point3i> view;
         std::string stageId;
         std::string	code;
         std::string	levelId;
@@ -66,7 +66,14 @@ namespace Map
         Level::name = data.get("name", "null");
         Level::height = data.at("height").as_integer();
         Level::width = data.at("width").as_integer();
-        Level::view = data.at("view").as_integer();
+        for (const json::value& point_data : data.at("view").as_array()) {
+            cv::Point3i tmp;
+            auto point_array = point_data.as_array();
+            tmp.x = point_array[0].as_integer();
+            tmp.y = point_array[1].as_integer();
+            tmp.z = point_array[2].as_integer();
+            Level::view.emplace_back(std::move(tmp));
+        }
         for (const json::value& row : data.at("tiles").as_array()) {
             std::vector<Tile> tmp;
             tmp.reserve(Level::width);
@@ -147,48 +154,15 @@ namespace Map
         double x = 0, y = 0, z = 0;
         for (const Map::Level& level : TileCalc::levels) {
             if (level.code == code_or_name || level.name == code_or_name) {
-                switch (level.view) {
-                case 0:
-                    x = 0;
-                    y = -4.81;
-                    z = -7.76;
-                    if (side) {
-                        x += 0.5975104570388794;
-                        y -= 0.5;
-                        z -= 0.882108688354492;
-                    }
-                    break;
-                case 1:
-                    x = 0;
-                    y = -5.60;
-                    z = -8.92;
-                    if (side) {
-                        x += 0.7989424467086792;
-                        y -= 0.5;
-                        z -= 0.86448486328125;
-                    }
-                    break;
-                case 2:
-                    x = 0;
-                    y = -5.08;
-                    z = -8.04;
-                    if (side) {
-                        x += 0.6461319923400879;
-                        y -= 0.5;
-                        z -= 0.877854309082031;
-                    }
-                    break;
-                default:
-                    x = 0;
-                    y = -6.1;
-                    z = -9.78;
-                    if (side) {
-                        x += 0.948279857635498;
-                        y -= 0.5;
-                        z -= 0.85141918182373;
-                    }
-                    break;
+                cv::Point3i view;
+                if(side){
+                    auto view = level.view[1];
+                }else{
+                    auto view = level.view[0];
                 }
+                x = view.x;
+                y = view.y;
+                z = view.z;
                 double adapter_y = 0, adapter_z = 0;
                 TileCalc::adapter(adapter_y, adapter_z);
                 double matrix[4][4]{
