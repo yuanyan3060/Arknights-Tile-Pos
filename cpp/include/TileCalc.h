@@ -154,7 +154,7 @@ namespace Map
         double x = 0, y = 0, z = 0;
         for (const Map::Level& level : TileCalc::levels) {
             if (level.code == code_or_name || level.name == code_or_name) {
-                cv::Point3i view;
+                cv::Point3d view;
                 if(side){
                     auto view = level.view[1];
                 }else{
