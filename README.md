@@ -1,6 +1,10 @@
 # Arknights-Tile-Pos
 识别明日方舟地图中的格子坐标  
 --
+## 地图数据
+[github](https://raw.githubusercontent.com/yuanyan3060/Arknights-Bot-Resource/main/levels.json)
+[fastgit](https://raw.fastgit.org/yuanyan3060/Arknights-Bot-Resource/main/levels.json)
+
 ## 已经支持的内容
 - 所有的地图（除非鹰角修改了这部分代码）
 - 所有的分辨率 (鹰角支持的，此程序都能支持)
@@ -8,6 +12,7 @@
 
 ## 示例
 ![avatar](./result.png)
+
 ## 特色
 使用矩阵计算而不是图色识别，准确率可达100%  
 图色识别是有极限的，我不做图色识别了，jojo(bushi)
