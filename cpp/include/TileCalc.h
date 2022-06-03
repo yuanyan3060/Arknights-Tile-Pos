@@ -154,7 +154,7 @@ namespace Map
             if (level.code != code_or_name && level.name != code_or_name) {
                 continue;
             }
-            auto [x, y, z] = level.view[static_cast<int>(side)];
+            auto [x, y, z] = level.view[side ? 1 : 0];
             double adapter_y = 0, adapter_z = 0;
             TileCalc::adapter(adapter_y, adapter_z);
             double matrix[4][4]{
