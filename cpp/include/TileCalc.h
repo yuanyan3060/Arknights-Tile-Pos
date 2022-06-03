@@ -25,7 +25,7 @@ namespace Map
         int get_width() const { return width; }
         int get_height() const { return height; }
         Tile get_item(int y, int x) const { return tiles[y][x]; }
-        std::vector<cv::Point3i> view;
+        std::vector<cv::Point3d> view;
         std::string stageId;
         std::string	code;
         std::string	levelId;
@@ -67,11 +67,11 @@ namespace Map
         Level::height = data.at("height").as_integer();
         Level::width = data.at("width").as_integer();
         for (const json::value& point_data : data.at("view").as_array()) {
-            cv::Point3i tmp;
+            cv::Point3d tmp;
             auto point_array = point_data.as_array();
-            tmp.x = point_array[0].as_integer();
-            tmp.y = point_array[1].as_integer();
-            tmp.z = point_array[2].as_integer();
+            tmp.x = point_array[0].as_double();
+            tmp.y = point_array[1].as_double();
+            tmp.z = point_array[2].as_double();
             Level::view.emplace_back(std::move(tmp));
         }
         for (const json::value& row : data.at("tiles").as_array()) {
