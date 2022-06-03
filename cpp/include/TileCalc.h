@@ -156,9 +156,9 @@ namespace Map
             if (level.code == code_or_name || level.name == code_or_name) {
                 cv::Point3d view;
                 if(side){
-                    auto view = level.view[1];
+                    view = level.view[1];
                 }else{
-                    auto view = level.view[0];
+                    view = level.view[0];
                 }
                 x = view.x;
                 y = view.y;
