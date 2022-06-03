@@ -6,17 +6,17 @@
 
 int main()
 {
-    auto img = cv::imread("..\\main\\2-10.png");
-    auto calc = Map::TileCalc::TileCalc(1920, 1080, "..\\levels.json");
+    auto img = cv::imread("CE-6.png");
+    auto calc = Map::TileCalc::TileCalc(1600, 900, "levels.json");
     std::vector<std::vector<cv::Point2d>> pos;
     std::vector<std::vector<Map::Tile>> tiles;
-    calc.run("2-10", true, pos, tiles);
+    calc.run("CE-6", false, pos, tiles);
     for (int y = 0; y < pos.size(); y++) {
         for (int x = 0; x < pos[y].size(); x++) {
             cv::circle(img, pos[y][x], 10, cv::Scalar(tiles[y][x].buildableType * 255, 0, tiles[y][x].heightType * 255), -1);
         }
     }
-    cv::imwrite("result.png", img);
+    cv::imwrite("test.png", img);
 
     return 0;
 }

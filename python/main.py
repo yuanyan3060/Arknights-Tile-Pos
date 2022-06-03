@@ -148,7 +148,7 @@ class Calc:
             result.append(tmp)
         return result
 
-levels_path = pathlib.Path(__file__).parent / "levels.json"
+levels_path = pathlib.Path(__file__).parent.parent / "levels.json"
 levels: List[Level] = []
 with open(levels_path, encoding="UTF-8") as fp:
     level_table = json.loads(fp.read())
@@ -156,11 +156,11 @@ with open(levels_path, encoding="UTF-8") as fp:
         levels.append(Level.from_json(data))
 
 if __name__ == "__main__":
-    calc = Calc(1680, 1080)
-    code = "2-10"
-    img = cv2.imread(f"../main/{code}.png")
-    for i in calc.run(code, side=True):
+    calc = Calc(1600, 900)
+    code = "CE-6"
+    img = cv2.imread(f"{code}.png")
+    for i in calc.run(code, side=False):
         for j in i:
             tile, pos = j
             cv2.circle(img, pos, 10, (255 * tile.heightType, 0, 255 * tile.buildableType), -1)
-    cv2.imwrite("../test.png", img)
+    cv2.imwrite("test.png", img)
