@@ -143,7 +143,7 @@ class Calc:
                                             np.array([(x - (w - 1) / 2), ((h - 1) / 2) - y, tile.heightType * -0.4, 1]))
                 p_x = (1 + p_x / p_w) / 2
                 p_y = (1 + p_y / p_w) / 2
-                center = int(p_y * self.height),int(p_x * self.width)#交换了xy坐标,符合竖屏坐标 
+                center = int(p_y * self.height),int(p_x * self.width)#交换了xy坐标,符合按键精灵的竖屏坐标 
                 tmp.append((center))
                 #print(x,y,center)
             result.append(tmp)
