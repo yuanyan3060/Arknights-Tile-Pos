@@ -47,7 +47,10 @@ class Level:
         for row in raw_tiles:
             row_tiles = []
             for tile in row:
-                row_tiles.append(Tile(tile['heightType'], tile['buildableType']))
+                heightType = tile['heightType']
+                if tile["tileKey"] == "tile_passable_wall":
+                    heightType = 1
+                row_tiles.append(Tile(heightType, tile['buildableType']))
             tiles.append(row_tiles)
 
         return cls(
