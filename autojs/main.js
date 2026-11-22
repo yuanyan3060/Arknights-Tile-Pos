@@ -103,6 +103,18 @@ let Calc = function (screen_width, screen_height, level) {
         this.view = new Vector3(level.view[0][0], level.view[0][1], level.view[0][2]);
         this.view_side = new Vector3(level.view[1][0], level.view[1][1], level.view[1][2]);
     }
+    this.is_autochess = function () {
+        return /^activities\/act3autochess\/level_act3autochess_m\d{2}$/.test(
+            this.level.levelId.toLowerCase().replace(/\\/g, "/"));
+    }
+    this.require_ordinary_focus = function () {
+        if (this.is_autochess()) throw new Error("AutoChess selected-character, skill and retreat views are not supported");
+    }
+    this.get_autochess_screen_pos = function (tile_x, tile_y, view) {
+        if (!this.is_autochess()) throw new Error("An act3 complete map is required");
+        if (view !== "shop" && view !== "hand") throw new Error("view must be shop or hand");
+        return this.get_character_screen_pos(tile_x, tile_y, view === "hand", false);
+    }
     this.adapter = function () {
         let fromRatio = 9 / 16;
         let toRatio = 3 / 4;
@@ -146,6 +158,7 @@ let Calc = function (screen_width, screen_height, level) {
     }
 
     this.get_with_draw_world_pos = function (tile_x, tile_y) {
+        this.require_ordinary_focus();
         const ret = this.get_character_world_pos(tile_x, tile_y);
         ret.x -= 1.3143386840820312;
         ret.y += 1.314337134361267;
@@ -154,6 +167,7 @@ let Calc = function (screen_width, screen_height, level) {
     }
 
     this.get_skill_world_pos = function (tile_x, tile_y) {
+        this.require_ordinary_focus();
         const ret = this.get_character_world_pos(tile_x, tile_y);
         ret.x += 1.3143386840820312;
         ret.y -= 1.314337134361267;
@@ -162,10 +176,11 @@ let Calc = function (screen_width, screen_height, level) {
     }
 
     this.get_character_screen_pos = function (tile_x, tile_y, side, focus) {
-        tile_x = tile_x || this.level.width - 1;
-        tile_y = tile_y || this.level.height - 1;
+        tile_x = tile_x == null ? this.level.width - 1 : tile_x;
+        tile_y = tile_y == null ? this.level.height - 1 : tile_y;
 
         if (focus) {
+            this.require_ordinary_focus();
             side = true;
         }
         const world_pos = this.get_character_world_pos(tile_x, tile_y);
@@ -174,8 +189,8 @@ let Calc = function (screen_width, screen_height, level) {
     }
 
     this.get_withdraw_screen_pos = function (tile_x, tile_y) {
-        tile_x = tile_x || this.level.width - 1;
-        tile_y = tile_y || this.level.height - 1;
+        tile_x = tile_x == null ? this.level.width - 1 : tile_x;
+        tile_y = tile_y == null ? this.level.height - 1 : tile_y;
 
         const world_pos = this.get_with_draw_world_pos(tile_x, tile_y);
         const offset = this.get_focus_offset(tile_x, tile_y);
@@ -184,8 +199,8 @@ let Calc = function (screen_width, screen_height, level) {
     }
 
     this.get_skill_screen_pos = function (tile_x, tile_y) {
-        tile_x = tile_x || this.level.width - 1;
-        tile_y = tile_y || this.level.height - 1;
+        tile_x = tile_x == null ? this.level.width - 1 : tile_x;
+        tile_y = tile_y == null ? this.level.height - 1 : tile_y;
 
         const world_pos = this.get_skill_world_pos(tile_x, tile_y);
         const offset = this.get_focus_offset(tile_x, tile_y);
@@ -242,6 +257,17 @@ let Calc = function (screen_width, screen_height, level) {
                 y = this.view.y,
                 z = this.view.z;
         }
+        const autochess = this.is_autochess();
+        if (autochess) {
+            if (offset.x || offset.y || offset.z) this.require_ordinary_focus();
+            const f32 = function (v) { return new Float32Array([v])[0]; };
+            const aspect = f32(this.screen_width / this.screen_height), native = f32(16 / 9);
+            const ratio = aspect >= f32(native - f32(1e-5)) ? 1 :
+                f32(f32(f32(f32(native / aspect) - 1) * f32(.64)) + 1);
+            y += (ratio - 1) * -4.809999942779541;
+            z += (ratio - 1) * -7.760000228881836;
+            adapter_y = adapter_z = 0;
+        }
         x += offset.x;
         y += offset.y + adapter_y;
         z += offset.z + adapter_z;
@@ -252,7 +278,7 @@ let Calc = function (screen_width, screen_height, level) {
             [0, 0, 0, 1],
         ];
         let matrix;
-        if (side) {
+        if (side && !autochess) {
             matrix = this.multiply_matrices(this.matrix_x, this.matrix_y);
             matrix = this.multiply_matrices(matrix, raw);
         } else {

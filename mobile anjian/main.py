@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import json
 import pathlib
 import math
+import re
 
 @dataclass
 class Tile:
@@ -21,7 +22,7 @@ class Level:
     height: int = 0
     width: int = 0
     tiles: List[List[Tile]] = None
-    view: List[List[int]] = None
+    view: List[List[float]] = None
 
     @classmethod
     def from_json(cls, json_data: dict) -> 'Level':
@@ -86,7 +87,7 @@ class Calc:
 
         return -1.4 * t, -2.8 * t
 
-    def run(self, code: str = "", name: str = "", side: bool = False) -> List[List[Tuple[Tile, Tuple[int, int]]]]:
+    def run(self, code: str = "", name: str = "", side: bool = False, stage_id: Optional[str] = None) -> List[List[Tuple[Tile, Tuple[int, int]]]]:
         """
         :param code: 关卡代号 例如:0-1 1-7
         :param name: 关卡名称 例如:与虫为伴 code和name中选填一个，一般情况code更方便，但是肉鸽关卡不能用code确定
@@ -96,7 +97,8 @@ class Calc:
         result: List[List[Tuple[Tile, Tuple[int, int]]]] = []
         level = None
         for item in levels:
-            if code == item.code or name == item.name:
+            if (item.stageId == stage_id if stage_id is not None
+                    else code == item.code or name == item.name):
                 level = item
         if level is None:
             return []
@@ -104,9 +106,21 @@ class Calc:
             x, y, z = level.view[1]
         else:
             x, y, z = level.view[0]
-        adapter_y, adapter_z = self.adapter()
-        y += adapter_y
-        z += adapter_z
+        # act3 full-map view[0/1] means preparation shop/hand.
+        autochess = re.fullmatch(r"activities/act3autochess/level_act3autochess_m\d{2}",
+                                 level.levelId.lower().replace("\\", "/")) is not None
+        if autochess:
+            f32 = np.float32
+            aspect, native = f32(self.width / self.height), f32(16 / 9)
+            epsilon = f32(1e-5)
+            ratio = 1.0 if aspect >= f32(native - epsilon) else float(f32(
+                f32(f32(f32(native / aspect) - f32(1)) * f32(.64)) + f32(1)))
+            y += (ratio - 1) * -4.809999942779541
+            z += (ratio - 1) * -7.760000228881836
+        else:
+            adapter_y, adapter_z = self.adapter()
+            y += adapter_y
+            z += adapter_z
         raw = np.array([
             [1, 0, 0, -x],
             [0, 1, 0, -y],
@@ -126,7 +140,7 @@ class Calc:
             [0, 0, 0, 1],
         ])
 
-        if side:
+        if side and not autochess:
             matrix = np.dot(matrix_x, matrix_y)
             matrix = np.dot(matrix, raw)
         else:
@@ -160,7 +174,7 @@ with open(levels_path, encoding="UTF-8") as fp:
         levels.append(Level.from_json(data))
         if data["name"]== None:
             continue
-        coordinate=[calc.run(code=data["code"],name=data["name"], side=False),calc.run(code=data["code"],name=data["name"], side=True)]
+        coordinate=[calc.run(code=data["code"],name=data["name"], side=False, stage_id=data["stageId"]),calc.run(code=data["code"],name=data["name"], side=True, stage_id=data["stageId"])]
         #print (coordinate)
         fw = open(map_path/(data["name"]+".txt"), 'w',encoding="UTF-8") #按地图名+保存坐标到txt  
         fw.write(json.dumps((coordinate), sort_keys=True, indent=4, separators=(',', ': '))) # 将字符串写入文件中

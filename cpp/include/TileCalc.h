@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <regex>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -193,14 +194,28 @@ namespace Map
     {
         auto [x, y, z] = level.view[side ? 1 : 0];
         double adapter_y = 0, adapter_z = 0;
-        this->adapter(adapter_y, adapter_z);
+        const bool autochess = std::regex_match(level.key.levelId,
+            std::regex("activities/act3autochess/level_act3autochess_m[0-9]{2}", std::regex::icase));
+        if (autochess) {
+            const float aspect = static_cast<float>(width) / static_cast<float>(height);
+            const float native = 16.0f / 9.0f;
+            const float quotient = native / aspect;
+            const float delta = quotient - 1.0f;
+            const float scaled = delta * .64f;
+            const float ratio = aspect >= native - 1e-5f ? 1.0f : scaled + 1.0f;
+            y += (static_cast<double>(ratio) - 1) * -4.809999942779541;
+            z += (static_cast<double>(ratio) - 1) * -7.760000228881836;
+        }
+        else {
+            this->adapter(adapter_y, adapter_z);
+        }
         double matrix[4][4] {
             { 1, 0, 0, -x }, { 0, 1, 0, -y - adapter_y }, { 0, 0, 1, -z - adapter_z }, { 0, 0, 0, 1 }
         };
         auto raw = cv::Mat(cv::Size(4, 4), CV_64F);
         auto Finall_Matrix = cv::Mat(cv::Size(4, 4), CV_64F);
         InitMat4x4(raw, matrix);
-        if (side) {
+        if (side && !autochess) {
             Finall_Matrix = this->MatrixP * this->MatrixX * this->MatrixY * raw;
         }
         else {

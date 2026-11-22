@@ -1,11 +1,24 @@
 import numpy as np
 import numpy.typing as npt
-import cv2
 from typing import Any, List, Optional, Tuple
 from dataclasses import dataclass
 import json
 import pathlib
 import math
+from enum import Enum
+import struct
+import re
+
+
+class AutoChessView(Enum):
+    SHOP = 0
+    HAND = 1
+
+
+def _f32(value: float) -> float:
+    return struct.unpack("<f", struct.pack("<f", value))[0]
+
+
 
 @dataclass
 class Tile:
@@ -38,7 +51,7 @@ class Level:
     height: int
     width: int
     tiles: List[List[Tile]] = None
-    view: List[List[int]] = None
+    view: List[List[float]] = None
 
     @classmethod
     def from_json(cls, json_data: dict[Any, Any]) -> 'Level':
@@ -112,6 +125,38 @@ class Calc:
         self.view = Vector3(level.view[0][0], level.view[0][1], level.view[0][2])
         self.view_side = Vector3(level.view[1][0], level.view[1][1], level.view[1][2])
 
+    @property
+    def is_autochess(self) -> bool:
+        # Only the complete-map act3 export has the supported settled views.
+        return re.fullmatch(r"activities/act3autochess/level_act3autochess_m\d{2}",
+                            self.level.levelId.lower().replace("\\", "/")) is not None
+
+    def get_autochess_screen_pos(self, tile_x: int, tile_y: int,
+                                view: AutoChessView = AutoChessView.SHOP) -> Vector2:
+        """Project a complete-map tile in the first area's settled preparation view."""
+        if not self.is_autochess:
+            raise ValueError("AutoChess preparation views require an act3 complete map")
+        if not isinstance(view, AutoChessView):
+            raise ValueError("view must be AutoChessView.SHOP or AutoChessView.HAND")
+        return self.get_character_screen_pos(tile_x, tile_y, side=view is AutoChessView.HAND)
+
+    def _require_ordinary_focus(self):
+        if self.is_autochess:
+            raise ValueError("AutoChess selected-character, skill and retreat views are not supported")
+
+    def _autochess_position(self, side: bool) -> Vector3:
+        position = (self.view_side if side else self.view).clone()
+        aspect = _f32(self.screen_width / self.screen_height)
+        native_aspect = _f32(16 / 9)
+        epsilon = struct.unpack("<f", bytes.fromhex("acc52737"))[0]
+        ratio = 1.0 if aspect >= _f32(native_aspect - epsilon) else _f32(
+            _f32(_f32(_f32(native_aspect / aspect) - 1.0) * _f32(.64)) + 1.0)
+        # The exported act3 SHOP_0/HAND_0 controller scale is 1 at 16:9.
+        # Scale only preset-zero's local offset, preserving controller translation.
+        position.y += (ratio - 1.0) * -4.809999942779541
+        position.z += (ratio - 1.0) * -7.760000228881836
+        return position
+
     def adapter(self) -> Tuple[float, float]:
         fromRatio = 9 / 16
         toRatio = 3 / 4
@@ -134,6 +179,7 @@ class Calc:
         return Vector3(x, y, z)
     
     def get_with_draw_world_pos(self, tile_x: int, tile_y: int) -> Vector3:
+        self._require_ordinary_focus()
         ret = self.get_character_world_pos(tile_x, tile_y)
         ret.x -= 1.3143386840820312
         ret.y += 1.314337134361267
@@ -141,6 +187,7 @@ class Calc:
         return ret
 
     def get_skill_world_pos(self, tile_x: int, tile_y: int) -> Vector3:
+        self._require_ordinary_focus()
         ret = self.get_character_world_pos(tile_x, tile_y)
         ret.x += 1.3143386840820312
         ret.y -= 1.314337134361267
@@ -149,6 +196,7 @@ class Calc:
     
     def get_character_screen_pos(self, tile_x: int, tile_y: int, side: bool = False, focus: bool = False) -> Vector2:
         if focus:
+            self._require_ordinary_focus()
             side = True
         world_pos = self.get_character_world_pos(tile_x, tile_y)
         if focus:
@@ -170,11 +218,16 @@ class Calc:
     def world_to_screen_matrix(self, side: bool = False, offset: Optional[Vector3] = None) -> npt.NDArray[np.float32]:
         if offset is None:
             offset = Vector3(0.0, 0.0, 0.0)
-        adapter_y, adapter_z = self.adapter()
-        if side:
-            x, y, z = self.view_side.x, self.view_side.y, self.view_side.z
+        if self.is_autochess:
+            if offset.x or offset.y or offset.z:
+                self._require_ordinary_focus()
+            position = self._autochess_position(side)
+            x, y, z = position.x, position.y, position.z
+            adapter_y, adapter_z = 0, 0
         else:
-            x, y, z = self.view.x, self.view.y, self.view.z
+            adapter_y, adapter_z = self.adapter()
+            position = self.view_side if side else self.view
+            x, y, z = position.x, position.y, position.z
         x += offset.x
         y += offset.y + adapter_y
         z += offset.z + adapter_z
@@ -184,7 +237,7 @@ class Calc:
             [0, 0, 1, -z],
             [0, 0, 0, 1],
         ], np.float32)
-        if side:
+        if side and not self.is_autochess:
             matrix = np.dot(self.matrix_x, self.matrix_y)
             matrix = np.dot(matrix, raw)
         else:
@@ -214,6 +267,8 @@ def find_level(code: Optional[str], name:Optional[str]) -> Optional[Level]:
     return None
 
 if __name__ == "__main__":
+    import cv2
+
     code = "2-10"
     name = None
     level = find_level(code, name)

@@ -10,6 +10,20 @@
 - 所有的分辨率 (鹰角支持的，此程序都能支持)
 - 包括放置干员时的倾斜视角 技能按钮 撤退按钮
 
+## 卫戍协议
+使用更新后包含 `act3autochess` 完整地图的 `levels.json`，支持第一子图的商店／手牌准备稳态：
+
+```python
+from main import AutoChessView, Calc
+
+calc = Calc(1280, 720, level)
+shop = calc.get_autochess_screen_pos(4, 32, AutoChessView.SHOP)
+hand = calc.get_autochess_screen_pos(4, 32, AutoChessView.HAND)
+```
+
+坐标为完整地图左上角起算的列、行；第一子图局部 `(4, 3)` 对应完整地图 `(4, 32)`。暂不支持卫戍协议的其他子图、战斗和角色选中机位，以及技能／撤退按钮坐标。
+
+其他平台同样使用完整地图数据：Auto.js 调用 `get_autochess_screen_pos(col, row, "shop"/"hand")`；C++、按键精灵和 Arklights 的 `side=false/true` 分别选择商店／手牌。两个 Python 导出版本可通过 `run(stage_id="act3autochess_m01", side=False)` 按关卡 ID 选择，按键精灵保留原有的竖屏坐标约定。
 
 ## 特色
 使用矩阵计算而不是图色识别，准确率可达100%  
